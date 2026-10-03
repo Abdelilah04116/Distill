@@ -14,7 +14,7 @@ LABEL org.opencontainers.image.title="Distill" \
       org.opencontainers.image.description="API locale devant un SLM specialise servi par Ollama." \
       org.opencontainers.image.authors="Abdelilah OURTI" \
       org.opencontainers.image.licenses="Apache-2.0" \
-      org.opencontainers.image.source="https://github.com/abdelilah-ourti/distill"
+      org.opencontainers.image.source="https://github.com/Abdelilah04116/distill"
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \

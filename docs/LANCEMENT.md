@@ -57,7 +57,7 @@ Checklist et textes prêts à publier. Les crochets `[...]` sont les seuls endro
 
 **Premier commentaire** :
 
-> Le dépôt : github.com/abdelilah-ourti/distill
+> Le dépôt : github.com/Abdelilah04116/distill
 >
 > Il y a un notebook Colab si vous voulez l'essayer sans GPU : une clé API, et le pipeline tourne de bout en bout sur le T4 gratuit.
 

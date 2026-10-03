@@ -96,7 +96,7 @@ distill run --task examples/email-triage/task.yaml
 ollama run distill-email-triage
 ```
 
-[github.com/abdelilah-ourti/distill](https://github.com/abdelilah-ourti/distill)
+[github.com/Abdelilah04116/distill](https://github.com/Abdelilah04116/distill)
 
 Sur quelle tâche répétitive payez-vous encore un modèle généraliste ?
 

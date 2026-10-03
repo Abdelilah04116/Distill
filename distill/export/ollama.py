@@ -16,7 +16,7 @@ from ..errors import ExportError
 from ..logging_utils import get_logger
 from ..prompts import system_prompt
 
-MODELFILE_TEMPLATE = """# Genere par Distill - https://github.com/abdelilah-ourti/distill
+MODELFILE_TEMPLATE = """# Genere par Distill - https://github.com/Abdelilah04116/distill
 # Tache : {task}
 FROM {gguf}
 

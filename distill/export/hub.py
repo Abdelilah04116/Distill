@@ -40,7 +40,7 @@ tags:
 {description}
 
 Petit modele specialise, distille depuis **{teacher}** avec
-[Distill](https://github.com/abdelilah-ourti/distill). Il fait une seule tache,
+[Distill](https://github.com/Abdelilah04116/distill). Il fait une seule tache,
 en local, et rend du JSON conforme a un schema fixe.
 
 ## Resultats mesures

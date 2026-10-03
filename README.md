@@ -6,8 +6,8 @@
 
 [![Licence](https://img.shields.io/badge/licence-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
-[![CI](https://github.com/abdelilah-ourti/distill/actions/workflows/ci.yml/badge.svg)](https://github.com/abdelilah-ourti/distill/actions/workflows/ci.yml)
-[![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/abdelilah-ourti/distill/blob/main/notebooks/distill_colab.ipynb)
+[![CI](https://github.com/Abdelilah04116/distill/actions/workflows/ci.yml/badge.svg)](https://github.com/Abdelilah04116/distill/actions/workflows/ci.yml)
+[![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Abdelilah04116/distill/blob/main/notebooks/distill_colab.ipynb)
 
 Une description de tâche, une vingtaine d'exemples, une commande.
 En sortie : un SLM de 0,5 à 3 milliards de paramètres, évalué, quantifié, et prêt à tourner en local avec Ollama.
@@ -308,7 +308,7 @@ distill publish --task examples/email-triage/task.yaml --repo compte/distill-ema
 ## Développement
 
 ```bash
-git clone https://github.com/abdelilah-ourti/distill && cd distill
+git clone https://github.com/Abdelilah04116/distill && cd distill
 pip install -e ".[dev,serve]"
 pytest                  # tests unitaires, sans GPU ni réseau
 ruff check distill

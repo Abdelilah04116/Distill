@@ -56,9 +56,9 @@ dev = [
 all = ["distill-slm[graph,dedup,serve,hub]"]
 
 [project.urls]
-Homepage = "https://github.com/abdelilah-ourti/distill"
-Documentation = "https://github.com/abdelilah-ourti/distill#readme"
-Source = "https://github.com/abdelilah-ourti/distill"
+Homepage = "https://github.com/Abdelilah04116/distill"
+Documentation = "https://github.com/Abdelilah04116/distill#readme"
+Source = "https://github.com/Abdelilah04116/distill"
 Article = "https://neurautech.com"
 
 [project.scripts]
