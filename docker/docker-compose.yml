@@ -1,0 +1,39 @@
+# Pile complete : Ollama sert le modele, l'API Distill valide les sorties.
+#
+#   docker compose -f docker/docker-compose.yml up --build
+#   curl -X POST localhost:8000/predict -H 'content-type: application/json' \
+#        -d '{"input":"Bonjour, je n ai pas recu ma facture."}'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports: ["11434:11434"]
+    volumes:
+      - ollama:/root/.ollama
+      # Les GGUF produits par `distill run` : monte-les pour pouvoir faire
+      # `ollama create` depuis le conteneur.
+      - ../runs:/runs:ro
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports: ["8000:8000"]
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      DISTILL_TASK: /app/task/task.yaml
+      DISTILL_MODEL: distill-email-triage
+    volumes:
+      # Pour servir une autre tache, monte son dossier ici.
+      - ../examples/email-triage:/app/task:ro
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+volumes:
+  ollama:

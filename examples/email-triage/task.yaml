@@ -1,0 +1,126 @@
+# Cas de demonstration : triage d'emails clients en francais.
+#
+# Entree : le corps d'un email recu par un service client.
+# Sortie : categorie, urgence, et un resume d'une ligne.
+#
+# Lance le pipeline complet avec :
+#   distill run --task examples/email-triage/task.yaml
+
+name: email-triage
+description: >-
+  Tu tries les emails recus par le service client d'une PME francaise.
+  Pour chaque email, tu determines sa categorie, son niveau d'urgence, et tu
+  en ecris un resume d'une seule ligne, factuel, de quinze mots maximum.
+language: francais
+seed: 42
+
+output_schema:
+  type: object
+  additionalProperties: false
+  required: [categorie, urgence, resume]
+  properties:
+    categorie:
+      type: string
+      enum: [reclamation, facturation, technique, commercial, autre]
+      description: >-
+        reclamation = mecontentement sur un produit, un service ou un delai ;
+        facturation = facture, paiement, remboursement, devis, prelevement ;
+        technique = panne, bug, probleme de connexion ou d'installation ;
+        commercial = demande d'offre, de prix, de demonstration, de contrat ;
+        autre = tout le reste (candidature, spam, hors sujet, remerciement).
+    urgence:
+      type: string
+      enum: [basse, moyenne, haute]
+      description: >-
+        haute = service interrompu, client bloque, delai legal ou menace de
+        resiliation ; moyenne = demande normale avec attente de reponse ;
+        basse = information, remerciement, sujet sans echeance.
+    resume:
+      type: string
+      description: Resume factuel d'une ligne, quinze mots maximum, sans formule de politesse.
+
+seeds: seeds.jsonl
+test_set: test_set.jsonl
+
+teacher:
+  provider: anthropic
+  model: claude-opus-5-5
+  effort: medium
+  max_tokens: 8000
+  concurrency: 4
+  use_cache: true
+  # Repli serveur : un refus isole ne doit pas faire tomber une generation
+  # de plusieurs milliers d'exemples.
+  server_side_fallback: true
+
+# Variante 100 % locale (RGPD strict, aucune donnee ne sort de la machine) :
+# remplace le bloc teacher ci-dessus par celui-ci, apres avoir lance
+#   vllm serve Qwen/Qwen2.5-32B-Instruct --port 8000
+# teacher:
+#   provider: openai_compatible
+#   base_url: http://localhost:8000/v1
+#   model: Qwen/Qwen2.5-32B-Instruct
+#   api_key_env: DISTILL_TEACHER_API_KEY
+#   temperature: 0.9
+
+student:
+  model: Qwen/Qwen2.5-1.5B-Instruct
+  max_seq_length: 2048
+  load_in_4bit: true
+
+budget:
+  max_examples: 3000
+  max_cost_usd: 5.0
+  max_duration_min: 120
+
+generation:
+  n_examples: 3000
+  examples_per_call: 10
+  seeds_per_prompt: 4
+  personas:
+    - un particulier presse qui ecrit depuis son telephone
+    - un gerant de PME tres formel
+    - un client agace par un probleme qui dure depuis trois semaines
+    - une assistante de direction qui ecrit au nom de son responsable
+    - un retraite peu a l'aise avec l'ecrit
+    - un developpeur qui decrit precisement un bug
+    - un acheteur qui compare plusieurs prestataires
+    - un client fidele qui demande un geste commercial
+    - un comptable qui reclame une facture manquante
+    - un candidat qui envoie une candidature spontanee
+  tones: [neutre, enerve, poli, presse, inquiet, menacant]
+  lengths: [tres court, moyen, long]
+  noise_ratio: 0.3
+  edge_case_ratio: 0.2
+
+critic:
+  judge_threshold: 4
+  judge_batch_size: 5
+  dedup_threshold: 0.92
+  test_split: 0.15
+  min_class_ratio: 0.08
+
+training:
+  lora_r: 16
+  lora_alpha: 32
+  learning_rate: 0.0002
+  epochs: 2
+  batch_size: 2
+  grad_accum: 4
+  save_steps: 50
+
+eval:
+  target_ratio: 0.90
+  min_json_valid: 0.95
+  primary_field: categorie
+  label_fields: [categorie, urgence]
+  max_iterations: 3
+  baseline: true
+  # Prix horaire du GPU de test, utilise pour convertir la latence locale en
+  # cout par 1 000 requetes. Ajuste-le a ta machine.
+  local_gpu_cost_per_hour: 0.60
+
+export:
+  quantizations: [Q4_K_M, Q8_0]
+  ollama_model_name: distill-email-triage
+  # llama_cpp_dir: ../../../llama.cpp

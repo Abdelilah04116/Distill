@@ -1,0 +1,6 @@
+runs/
+.venv/
+.git/
+tests/
+*.gguf
+__pycache__/

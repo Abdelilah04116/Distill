@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: tests (python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Installer le paquet
+        # Ni GPU ni reseau dans la CI : on installe le noyau, le service et
+        # LangGraph, pas torch. Les tests remplacent le professeur par un double.
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,serve,graph]"
+
+      - name: Lint
+        run: ruff check distill tests
+
+      - name: Format
+        run: ruff format --check distill tests
+
+      - name: Types
+        run: mypy distill
+
+      - name: Tests
+        run: pytest --cov=distill --cov-report=term-missing --cov-report=xml
+
+      - name: Verifier l'exemple livre
+        run: |
+          distill validate --task examples/email-triage/task.yaml
+          distill estimate --task examples/email-triage/task.yaml
+          distill run --task examples/email-triage/task.yaml --dry-run
+
+      - uses: actions/upload-artifact@v4
+        if: matrix.python == '3.11'
+        with:
+          name: coverage
+          path: coverage.xml
+
+  build:
+    name: paquet et image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Construire la distribution
+        run: |
+          python -m pip install --upgrade pip build twine
+          python -m build
+          twine check dist/*
+
+      - name: Construire l'image de service
+        run: docker build -f docker/Dockerfile -t distill:ci .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/

@@ -1,0 +1,9 @@
+Distill
+Copyright 2026 Abdelilah OURTI (AI Engineer) - https://neurautech.com
+
+This product includes software developed by Abdelilah OURTI.
+
+Les modeles eleves (Qwen 2.5, Llama 3.2) et les modeles professeurs restent
+soumis a leurs licences respectives. Verifiez les conditions d'utilisation de
+votre fournisseur de LLM professeur avant d'entrainer un modele sur ses sorties
+(voir la commande `distill run --check-terms`).

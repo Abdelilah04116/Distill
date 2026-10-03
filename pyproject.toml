@@ -1,0 +1,91 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "distill-slm"
+version = "0.1.0"
+description = "Transforme une description de tache et ~20 exemples en un petit modele specialise, evalue et pret pour Ollama, en une seule commande."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Abdelilah OURTI", email = "abdelilahourti@gmail.com" }]
+maintainers = [{ name = "Abdelilah OURTI", email = "abdelilahourti@gmail.com" }]
+keywords = ["llm", "distillation", "slm", "lora", "ollama", "fine-tuning", "synthetic-data"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+  "typer>=0.12",
+  "rich>=13.7",
+  "pydantic>=2.7",
+  "pyyaml>=6.0",
+  "jinja2>=3.1",
+  "numpy>=1.24",
+  "httpx>=0.27",
+  "anthropic>=0.40",
+]
+
+[project.optional-dependencies]
+graph = ["langgraph>=0.2.28", "langgraph-checkpoint-sqlite>=1.0.0"]
+dedup = ["sentence-transformers>=3.0", "qdrant-client>=1.9"]
+train = [
+  "torch>=2.3",
+  "transformers>=4.44",
+  "datasets>=2.20",
+  "peft>=0.12",
+  "trl>=0.9",
+  "accelerate>=0.33",
+  "bitsandbytes>=0.43; sys_platform == 'linux'",
+]
+serve = ["fastapi>=0.111", "uvicorn[standard]>=0.30"]
+dev = [
+  "pytest>=8.2",
+  "pytest-cov>=5.0",
+  "mypy>=1.10",
+  "ruff>=0.5",
+  "types-PyYAML",
+]
+all = ["distill-slm[graph,dedup,serve]"]
+
+[project.urls]
+Homepage = "https://github.com/abdelilah-ourti/distill"
+Documentation = "https://github.com/abdelilah-ourti/distill#readme"
+Source = "https://github.com/abdelilah-ourti/distill"
+Article = "https://neurautech.com"
+
+[project.scripts]
+distill = "distill.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["distill"]
+
+[tool.hatch.build.targets.sdist]
+include = ["distill", "examples", "tests", "README.md", "LICENSE"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+markers = ["slow: tests that need a GPU or network"]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "BLE"]
+ignore = ["B008", "E501"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+exclude = ["tests/", "build/"]

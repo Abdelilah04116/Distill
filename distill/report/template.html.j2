@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Distill — {{ task.name }}</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-0: #f5f5f3;
+    --surface-1: #fcfcfb;
+    --surface-2: #efeeea;
+    --border: #dcdbd4;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #7a7873;
+    --series-student: #2a78d6;
+    --series-teacher: #eb6834;
+    --series-baseline: #1baf7a;
+    --good: #0f7a4d;
+    --warn: #9a6400;
+    --grid: #e3e2dc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-0: #121211;
+      --surface-1: #1a1a19;
+      --surface-2: #232321;
+      --border: #383835;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #94938b;
+      --series-student: #3987e5;
+      --series-teacher: #d95926;
+      --series-baseline: #199e70;
+      --good: #4ec08a;
+      --warn: #e0a640;
+      --grid: #2e2e2b;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-0: #121211;
+    --surface-1: #1a1a19;
+    --surface-2: #232321;
+    --border: #383835;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #94938b;
+    --series-student: #3987e5;
+    --series-teacher: #d95926;
+    --series-baseline: #199e70;
+    --good: #4ec08a;
+    --warn: #e0a640;
+    --grid: #2e2e2b;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--surface-0);
+    color: var(--text-primary);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 32px 16px 64px; }
+  header.page { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  h1 { font-size: 1.75rem; margin: 0 0 6px; letter-spacing: -0.015em; }
+  h2 { font-size: 1.15rem; margin: 40px 0 12px; letter-spacing: -0.01em; }
+  h3 { font-size: 0.95rem; margin: 24px 0 8px; color: var(--text-secondary); font-weight: 600; }
+  p { margin: 0 0 12px; color: var(--text-secondary); }
+  .meta { color: var(--text-muted); font-size: 0.82rem; }
+  .meta code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.85em; }
+
+  .verdict {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--good);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 8px;
+  }
+  .verdict.miss { border-left-color: var(--warn); }
+  .verdict h2 { margin: 0 0 4px; font-size: 1.05rem; }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 20px 0 8px; }
+  .kpi { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .kpi .label { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+  .kpi .value { font-size: 1.6rem; font-weight: 650; letter-spacing: -0.02em; margin-top: 2px; }
+  .kpi .note { font-size: 0.78rem; color: var(--text-muted); }
+
+  figure { margin: 0 0 8px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+  figcaption { font-size: 0.8rem; color: var(--text-muted); margin-top: 12px; }
+
+  .bars { display: flex; flex-direction: column; gap: 10px; }
+  .bar-row { display: grid; grid-template-columns: minmax(110px, 180px) 1fr; gap: 12px; align-items: center; }
+  .bar-label { font-size: 0.85rem; color: var(--text-secondary); overflow-wrap: anywhere; }
+  .bar-track { background: var(--surface-2); border-radius: 0 4px 4px 0; height: 22px; position: relative; }
+  .bar-fill { height: 100%; border-radius: 0 4px 4px 0; }
+  .bar-value { position: absolute; top: 0; left: 8px; line-height: 22px; font-size: 0.78rem; font-weight: 600; color: var(--text-primary); }
+  .sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: 1px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th, td { text-align: right; padding: 9px 10px; border-bottom: 1px solid var(--border); }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { color: var(--text-muted); font-weight: 600; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  tbody tr:last-child td { border-bottom: none; }
+  .table-wrap { overflow-x: auto; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 4px 16px; }
+  tr.is-student td { font-weight: 600; }
+
+  .note { background: var(--surface-1); border: 1px solid var(--border); border-left: 3px solid var(--warn); border-radius: 8px; padding: 12px 14px; font-size: 0.86rem; color: var(--text-secondary); margin-bottom: 10px; }
+
+  .err { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; }
+  .err .cat { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--warn); font-weight: 650; }
+  .err .input { margin: 8px 0; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-primary); }
+  .err .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .err pre { background: var(--surface-2); border-radius: 6px; padding: 8px 10px; margin: 4px 0 0; overflow-x: auto; }
+  .err .k { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+
+  footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--text-muted); }
+  a { color: var(--series-student); }
+  @media (max-width: 600px) {
+    .err .cols { grid-template-columns: 1fr; }
+    .bar-row { grid-template-columns: 1fr; gap: 4px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="page">
+  <h1>Distill — {{ task.name }}</h1>
+  <p>{{ task.description }}</p>
+  <p class="meta">
+    Run <code>{{ run.id }}</code> · {{ run.created_at }} ·
+    eleve <code>{{ task.student_model }}</code> ·
+    professeur <code>{{ task.teacher_model }}</code>{% if task.teacher_local %} (local){% endif %} ·
+    graine <code>{{ task.seed }}</code>
+  </p>
+</header>
+
+{% if verdict.has_teacher %}
+<div class="verdict{% if not verdict.target_met %} miss{% endif %}">
+  <h2>{% if verdict.target_met %}Cible atteinte{% else %}Cible non atteinte{% endif %}</h2>
+  <p style="margin:0">
+    L'eleve atteint <strong>{{ verdict.quality_ratio | pct }}</strong> du score du professeur
+    (cible : {{ verdict.target_ratio | pct }}),
+    repond <strong>{{ verdict.speedup | num(1) }}×</strong> plus vite
+    et coute <strong>{{ verdict.cost_factor | num(1) }}×</strong> moins cher pour 1 000 requetes.
+  </p>
+</div>
+{% endif %}
+
+<div class="kpis">
+  {% for m in models %}
+  <div class="kpi">
+    <div class="label"><span class="sw" style="background:var(--series-{{ m.kind }})"></span>{{ m.name }}</div>
+    <div class="value">{{ m.score | pct }}</div>
+    <div class="note">F1 macro · {{ m.latency_ms }} ms · {{ m.cost_per_1k_usd | usd }}/1k</div>
+  </div>
+  {% endfor %}
+</div>
+
+<h2>Tableau comparatif</h2>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Modele</th><th>Exactitude</th><th>F1 macro</th><th>JSON valide</th>
+        <th>Correspondance totale</th><th>Latence moy.</th><th>Latence p95</th><th>Cout / 1 000 req.</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in models %}
+      <tr{% if m.kind == 'student' %} class="is-student"{% endif %}>
+        <td><span class="sw" style="background:var(--series-{{ m.kind }})"></span>{{ m.name }}</td>
+        <td>{{ m.accuracy | pct }}</td>
+        <td>{{ m.macro_f1 | pct }}</td>
+        <td>{{ m.json_valid_rate | pct }}</td>
+        <td>{{ m.exact_match | pct }}</td>
+        <td>{{ m.latency_ms }} ms</td>
+        <td>{{ (m.latency_p95_s * 1000) | num(0) }} ms</td>
+        <td>{{ m.cost_per_1k_usd | usd }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="meta" style="margin-top:8px">
+  Meme test set ({{ models[0].n if models else 0 }} exemples), memes entrees, meme prompt d'inference pour tous les modeles.
+  La correspondance totale porte sur les champs a valeurs fermees : un champ libre comme un resume
+  ne se compare pas par egalite de chaines.
+  Le cout local est derive du temps GPU occupe ; le cout API est facture au token.
+  La latence du professeur est mesuree par appel, avec une concurrence de {{ concurrency }}.
+</p>
+
+<h2>Qualite par modele</h2>
+<figure>
+  <div class="bars">
+    {% for m in models %}
+    <div class="bar-row">
+      <div class="bar-label"><span class="sw" style="background:var(--series-{{ m.kind }})"></span>{{ m.name }}</div>
+      <div class="bar-track" title="{{ m.name }} — F1 macro {{ m.macro_f1 | pct }}">
+        <div class="bar-fill" style="width:{{ m.bar_pct }}%;background:var(--series-{{ m.kind }})"></div>
+        <span class="bar-value">{{ m.score | pct }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <figcaption>F1 macro sur le champ <code>{{ primary_field or 'sortie complete' }}</code>, barres proportionnelles au meilleur score. Valeurs exactes dans le tableau ci-dessus.</figcaption>
+</figure>
+
+{% if loss.has_data %}
+<h2>Courbe d'entrainement</h2>
+<figure>
+  <svg viewBox="0 0 {{ loss.width }} {{ loss.height }}" width="100%" height="200" role="img"
+       aria-label="Courbe de loss, de {{ loss.first_loss }} a {{ loss.last_loss }} sur {{ loss.x_last }} pas">
+    <line x1="{{ loss.pad }}" y1="{{ loss.pad }}" x2="{{ loss.width - loss.pad }}" y2="{{ loss.pad }}" stroke="var(--grid)" stroke-width="1"/>
+    <line x1="{{ loss.pad }}" y1="{{ loss.height - loss.pad }}" x2="{{ loss.width - loss.pad }}" y2="{{ loss.height - loss.pad }}" stroke="var(--grid)" stroke-width="1"/>
+    <polyline points="{{ loss.polyline }}" fill="none" stroke="var(--series-student)" stroke-width="2"
+              stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    {% for p in loss.markers %}
+    <circle cx="{{ p.x }}" cy="{{ p.y }}" r="8" fill="transparent" pointer-events="all">
+      <title>pas {{ p.step }} — loss {{ p.loss }}</title>
+    </circle>
+    {% endfor %}
+    <text x="{{ loss.pad }}" y="{{ loss.pad - 8 }}" fill="var(--text-muted)" font-size="11">{{ loss.y_top }}</text>
+    <text x="{{ loss.pad }}" y="{{ loss.height - loss.pad + 16 }}" fill="var(--text-muted)" font-size="11">pas {{ loss.x_first }}</text>
+    <text x="{{ loss.width - loss.pad }}" y="{{ loss.height - loss.pad + 16 }}" fill="var(--text-muted)" font-size="11" text-anchor="end">pas {{ loss.x_last }}</text>
+  </svg>
+  <figcaption>Loss d'entrainement : {{ loss.first_loss }} au depart, {{ loss.last_loss }} a la fin{% if training %} ({{ training.steps }} pas, backend {{ training.backend }}){% endif %}.</figcaption>
+</figure>
+{% endif %}
+
+{% if per_class %}
+<h2>Detail par classe (eleve)</h2>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Classe</th><th>Effectif</th><th>Precision</th><th>Rappel</th><th>F1</th></tr></thead>
+    <tbody>
+      {% for c in per_class %}
+      <tr>
+        <td><code>{{ c.label }}</code></td><td>{{ c.support }}</td>
+        <td>{{ c.precision | pct }}</td><td>{{ c.recall | pct }}</td><td>{{ c.f1 | pct }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if field_accuracy %}
+<h3>Exactitude par champ</h3>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Champ</th><th>Exactitude</th></tr></thead>
+    <tbody>
+      {% for name, value in field_accuracy.items() %}
+      <tr><td><code>{{ name }}</code></td><td>{{ value | pct }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<h2>La ou l'eleve echoue</h2>
+<p>Publier les echecs fait partie du protocole. Les cas ci-dessous sont des erreurs reelles sur le test set, non selectionnees.</p>
+{% if error_groups %}
+<div class="table-wrap" style="margin-bottom:16px">
+  <table>
+    <thead><tr><th>Type d'erreur</th><th>Occurrences</th></tr></thead>
+    <tbody>
+      {% for cat, count in error_groups.items() %}
+      <tr><td><code>{{ cat }}</code></td><td>{{ count }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% for e in errors %}
+<div class="err">
+  <div class="cat">{{ e.category }}</div>
+  <div class="input">{{ e.input }}</div>
+  <div class="cols">
+    <div><div class="k">attendu</div><pre>{{ e.expected | tojson(indent=2) }}</pre></div>
+    <div><div class="k">obtenu</div><pre>{{ e.predicted | tojson(indent=2) if e.predicted else e.predicted_raw }}</pre></div>
+  </div>
+</div>
+{% else %}
+<p>Aucune erreur conservee : soit le test set est passe sans faute, soit l'evaluation n'a pas tourne.</p>
+{% endfor %}
+
+<h2>Donnees</h2>
+<div class="table-wrap">
+  <table>
+    <tbody>
+      <tr><td>Exemples demandes au professeur</td><td>{{ generation.requested or 0 }}</td></tr>
+      <tr><td>Exemples produits et valides par le schema</td><td>{{ generation.kept or 0 }}</td></tr>
+      <tr><td>Sorties rejetees par le schema</td><td>{{ generation.schema_violations or 0 }}</td></tr>
+      <tr><td>Doublons exacts retires</td><td>{{ critique.exact_duplicates or 0 }}</td></tr>
+      <tr><td>Doublons semantiques retires ({{ critique.embedder or 'n/a' }})</td><td>{{ critique.semantic_duplicates or 0 }}</td></tr>
+      <tr><td>Fuites du test set ecartees</td><td>{{ critique.test_leaks or 0 }}</td></tr>
+      <tr><td>Exemples rejetes par le juge (note moyenne {{ critique.judge_mean_score or 0 }}/5)</td><td>{{ critique.judge_rejected or 0 }}</td></tr>
+      <tr><td>Exemples d'entrainement retenus</td><td>{{ critique.kept or 0 }}</td></tr>
+    </tbody>
+  </table>
+</div>
+
+{% if critique.class_balance %}
+<h3>Equilibre des classes (entrainement)</h3>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Classe</th><th>Exemples</th></tr></thead>
+    <tbody>
+      {% for label, count in critique.class_balance.items() %}
+      <tr><td><code>{{ label }}</code></td><td>{{ count }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if iterations %}
+<h2>Boucle d'amelioration</h2>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Iteration</th><th>Score eleve</th><th>Ratio / professeur</th><th>Exemples ajoutes</th><th>Cibles</th></tr></thead>
+    <tbody>
+      {% for it in iterations %}
+      <tr>
+        <td>{{ it.iteration }}</td>
+        <td>{{ it.score | pct }}</td>
+        <td>{{ it.ratio | pct }}</td>
+        <td>{{ it.added or 0 }}</td>
+        <td style="text-align:left">{{ (it.directives or []) | join(' ; ') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<h2>Cout du run</h2>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Etape</th><th>Appels</th><th>Hits de cache</th><th>Tokens entree</th><th>Tokens sortie</th><th>Cout</th></tr></thead>
+    <tbody>
+      {% for name, s in (costs.stages or {}).items() %}
+      <tr>
+        <td>{{ name }}</td><td>{{ s.calls }}</td><td>{{ s.cache_hits }}</td>
+        <td>{{ s.input_tokens }}</td><td>{{ s.output_tokens }}</td><td>{{ s.cost_usd | usd }}</td>
+      </tr>
+      {% endfor %}
+      <tr><td><strong>Total</strong></td><td colspan="4"></td><td><strong>{{ (costs.total_cost_usd or 0) | usd }}</strong></td></tr>
+    </tbody>
+  </table>
+</div>
+<p class="meta" style="margin-top:8px">Duree totale du run : {{ (costs.elapsed_min or 0) | num(1) }} min.</p>
+
+{% for w in warnings %}
+<div class="note">{{ w }}</div>
+{% endfor %}
+
+{% if artifacts %}
+<h2>Artefacts</h2>
+<div class="table-wrap">
+  <table>
+    <tbody>
+      {% for name, path in artifacts.items() %}
+      <tr><td>{{ name }}</td><td style="text-align:left"><code>{{ path }}</code></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="meta" style="margin-top:8px">Pour essayer le modele : <code>ollama run {{ task.ollama_name }}</code></p>
+{% endif %}
+
+<footer>
+  Genere par Distill {{ run.distill_version }} · Python {{ run.python }} · {{ run.platform }} ·
+  graine {{ task.seed }} (run reproductible) ·
+  Abdelilah OURTI, AI Engineer — <a href="https://neurautech.com">neurautech.com</a>
+</footer>
+
+</div>
+</body>
+</html>
