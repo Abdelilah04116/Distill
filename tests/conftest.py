@@ -142,7 +142,7 @@ def task_dir(tmp_path: Path) -> Path:
         "budget": {"max_examples": 200, "max_cost_usd": 1.0, "max_duration_min": 10},
     }
     (tmp_path / "task.yaml").write_text(
-        yaml.safe_dump(payload, allow_unicode=True), encoding="utf-8"
+        yaml.safe_dump(payload, allow_unicode=True, sort_keys=False), encoding="utf-8"
     )
     return tmp_path
 

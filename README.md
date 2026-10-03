@@ -7,6 +7,7 @@
 [![Licence](https://img.shields.io/badge/licence-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![CI](https://github.com/abdelilah-ourti/distill/actions/workflows/ci.yml/badge.svg)](https://github.com/abdelilah-ourti/distill/actions/workflows/ci.yml)
+[![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/abdelilah-ourti/distill/blob/main/notebooks/distill_colab.ipynb)
 
 Une description de tâche, une vingtaine d'exemples, une commande.
 En sortie : un SLM de 0,5 à 3 milliards de paramètres, évalué, quantifié, et prêt à tourner en local avec Ollama.
@@ -29,17 +30,9 @@ ollama run distill-email-triage
 
 ## Ce que ça fait, étape par étape
 
-```
-task.yaml ──▶ Générateur ──▶ Critique ──▶ Entraînement ──▶ Évaluateur
- description      2 à 5k      dédup +        LoRA /          SLM vs
- + 20 seeds      exemples    LLM juge        Unsloth        professeur
-                    ▲                                           │
-                    │                                           ▼
-                    └──── Améliorateur ◀──── non ───  Cible atteinte ?
-                          données ciblées                        │ oui
-                          (max 3 itérations)                     ▼
-                                                    Export : GGUF · Ollama · FastAPI
-```
+<div align="center">
+  <img src="docs/architecture.svg" alt="task.yaml alimente le Générateur, puis le Critique, puis l'Entraînement LoRA, puis l'Évaluateur. Si la cible n'est pas atteinte, l'Améliorateur produit des exemples ciblés et renvoie au Critique, trois fois au maximum. Sinon, le pipeline exporte en GGUF, Ollama et FastAPI." width="880">
+</div>
 
 | Agent | Rôle | Fichier |
 |---|---|---|
@@ -106,8 +99,10 @@ distill run --task t.yaml --dry-run          # plan + estimation de coût, sans 
 distill run --task t.yaml --resume           # reprend le dernier run
 distill run --task t.yaml --skip-generation  # réutilise les exemples déjà produits
 distill watch --task t.yaml                  # suivi en direct : étapes, coût, courbe de loss
+distill review --task t.yaml                 # relecture humaine du test set, exemple par exemple
 distill eval --task t.yaml --backend ollama  # réévalue le modèle quantifié réellement livré
 distill report --task t.yaml                 # régénère le rapport HTML
+distill publish --task t.yaml --repo compte/modele --dry-run   # carte de modèle Hugging Face
 distill cache --clear                        # vide le cache des appels au professeur
 ```
 
@@ -216,7 +211,7 @@ Objectifs de la v1 : **≥ 90 %** du score du professeur, **≥ 10×** moins che
 | 1.5B | ~8 Go | Colab / Kaggle gratuit, RTX 3060 |
 | 3B | ~14 Go | RTX 4090, L4, A10 |
 
-Sans GPU, tout le reste fonctionne : génération, critique, évaluation d'un modèle Ollama, rapport. Seul `--skip-training` est alors nécessaire.
+Sans GPU local, le notebook [`notebooks/distill_colab.ipynb`](notebooks/distill_colab.ipynb) exécute le pipeline complet sur le T4 gratuit de Colab ou Kaggle, compilation de llama.cpp et export GGUF compris. Sinon, tout le reste fonctionne sur CPU — génération, critique, évaluation d'un modèle Ollama, rapport — avec `--skip-training`.
 
 ## Structure du dépôt
 
@@ -236,8 +231,13 @@ distill/
 │   ├── export/                 # gguf · ollama
 │   ├── students/               # runners HF, Ollama, professeur
 │   ├── serving/api.py          # FastAPI /predict
+│   ├── review.py               # relecture humaine du test set
+│   ├── dashboard.py            # distill watch
 │   └── report/                 # rapport HTML autonome
 ├── examples/email-triage/      # task.yaml + 24 seeds + 201 exemples de test
+├── notebooks/                  # exécution sur GPU gratuit (Colab / Kaggle)
+├── demo/                       # bande VHS du GIF + plan de tournage
+├── docs/                       # architecture, lancement, article
 ├── docker/                     # image de service
 └── tests/
 ```
@@ -274,6 +274,19 @@ Il vaut mieux les lire avant de lancer un run que de les découvrir après.
 - **Unsloth ne tourne pas partout.** Sans lui, le pipeline bascule sur Transformers + PEFT + TRL, plus lent mais équivalent.
 - **Le suivi est un tableau de bord de terminal, pas une interface web.** `distill watch` lit les fichiers que le run écrit de toute façon ; il n'y a ni serveur, ni base, ni historique multi-runs.
 
+## Relire le test set
+
+C'est la seule étape que personne ne peut automatiser à votre place, et celle dont dépendent tous les chiffres. Le pipeline l'outille :
+
+```bash
+distill review --task examples/email-triage/task.yaml --status   # où en est la relecture
+distill review --task examples/email-triage/task.yaml            # valider, corriger, supprimer
+```
+
+Chaque exemple s'affiche avec sa sortie attendue ; vous validez, corrigez ou supprimez. Les champs à valeurs fermées sont proposés sous forme de choix, donc une relecture ne peut pas introduire une valeur hors schéma — et une correction refusée laisse l'exemple intact. L'avancement est écrit à chaque réponse : arrêtez-vous au vingtième, reprenez demain.
+
+**Le test set livré dans `examples/` a été rédigé pour la démonstration, pas validé par un humain.** `distill review` est là pour que vous le fassiez avant de publier le moindre chiffre.
+
 ## Suivre un run en cours
 
 Un run dure jusqu'à deux heures. Dans un second terminal :
@@ -283,6 +296,14 @@ distill watch --task examples/email-triage/task.yaml
 ```
 
 Étapes en cours et terminées, nombre d'exemples retenus, ratio courant face au professeur, et la courbe de loss en sparkline. Tout vient de `logs/events.jsonl`, `train/loss.jsonl` et `state.json`, donc le suivi fonctionne aussi après coup (`--once`) et sur un run lancé par quelqu'un d'autre.
+
+## Publier le modèle
+
+```bash
+distill publish --task examples/email-triage/task.yaml --repo compte/distill-email-triage --dry-run
+```
+
+`--dry-run` écrit la carte de modèle dans `export/README.md` sans rien envoyer : relisez-la, puis relancez sans le drapeau. La carte est remplie avec les chiffres de votre run — tableau comparatif, limites connues, répartition des erreurs réelles, prompt système exact. Le GGUF f16 n'est pas envoyé dès lors qu'une version quantifiée existe.
 
 ## Développement
 
@@ -298,7 +319,12 @@ Les tests ne font aucun appel réseau : le professeur est remplacé par un faux 
 
 ## Aller plus loin
 
-- [docs/LANCEMENT.md](docs/LANCEMENT.md) — checklist de publication, textes des posts, carte de modèle Hugging Face. Les chiffres y sont volontairement laissés en blanc : ne publiez que ce que vous avez mesuré.
+- [notebooks/distill_colab.ipynb](notebooks/distill_colab.ipynb) — le pipeline complet sur un GPU gratuit, de l'installation au GGUF téléchargeable.
+- [demo/](demo/) — la bande VHS qui produit le GIF, et le plan de tournage de la vidéo de 60 à 90 s.
+- [docs/LANCEMENT.md](docs/LANCEMENT.md) — checklist de publication et textes des posts.
+- [docs/article-neurautech.md](docs/article-neurautech.md) — brouillon de l'article technique.
+
+Dans ces trois derniers, les chiffres sont volontairement laissés entre crochets : ne publiez que ce que vous avez mesuré.
 
 ## Licence et crédits
 

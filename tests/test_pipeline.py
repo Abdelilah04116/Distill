@@ -375,3 +375,101 @@ def test_cli_watch_once_on_a_finished_run(pipeline) -> None:  # type: ignore[no-
     )
     assert result.exit_code == 0
     assert "Etat du run" in result.stdout
+
+
+# --------------------------------------------------------------------- publication
+
+
+def test_model_card_carries_the_measured_numbers_and_the_limits(
+    cfg: TaskConfig, test_examples, tmp_path: Path
+) -> None:
+    from distill.export.hub import build_model_card
+
+    student = evaluate_model(
+        cfg, StubPredictor("Distill 1.5B", kind="student", mode="confused"), test_examples
+    )
+    teacher = evaluate_model(
+        cfg, StubPredictor("Professeur", kind="teacher", latency=0.9), test_examples
+    )
+    metrics = EvaluationResult(reports=[teacher, student], primary_field="categorie").as_dict()
+
+    card = build_model_card(cfg, metrics)
+
+    assert card.startswith("---"), "la carte doit porter son front matter YAML"
+    assert "license: apache-2.0" in card
+    assert f"base_model: {cfg.student.model}" in card
+    assert "## Resultats mesures" in card
+    assert "## Limites" in card
+    assert "## Ou le modele echoue" in card
+    assert "confusion:" in card, "les cas d'echec reels doivent figurer dans la carte"
+    # Le prompt systeme publie doit etre exactement celui de l'entrainement.
+    from distill.prompts import system_prompt
+
+    assert system_prompt(cfg) in card
+    # Les champs libres sont signales comme non mesures.
+    assert "resume" in card
+
+
+def test_publication_plan_ships_the_right_files(
+    cfg: TaskConfig, test_examples, tmp_path: Path
+) -> None:
+    from distill.export.hub import plan_publication
+    from distill.paths import RunPaths, write_json
+
+    paths = RunPaths.create(tmp_path / "runs", cfg.name, "20261003-000000")
+    report = evaluate_model(cfg, StubPredictor("Distill", kind="student"), test_examples)
+    write_json(paths.metrics, EvaluationResult(reports=[report]).as_dict())
+    for name in (f"{cfg.model_slug}-f16.gguf", f"{cfg.model_slug}-Q4_K_M.gguf"):
+        (paths.export_dir / name).write_bytes(b"gguf")
+    paths.modelfile.write_text("FROM ./x.gguf", encoding="utf-8")
+
+    plan = plan_publication(cfg, paths, "compte/distill-test")
+    names = {p.name for p in plan.files}
+
+    assert f"{cfg.model_slug}-Q4_K_M.gguf" in names
+    assert f"{cfg.model_slug}-f16.gguf" not in names, (
+        "le f16 ne part pas une fois le quantifie disponible"
+    )
+    assert "Modelfile" in names
+    assert plan.card.is_file()
+    assert "compte/distill-test" in plan.describe()
+
+
+def test_publication_refuses_a_run_without_metrics(cfg: TaskConfig, tmp_path: Path) -> None:
+    from distill.errors import ExportError
+    from distill.export.hub import plan_publication
+    from distill.paths import RunPaths
+
+    paths = RunPaths.create(tmp_path / "runs", cfg.name, "20261003-000001")
+    with pytest.raises(ExportError, match="metrique"):
+        plan_publication(cfg, paths, "compte/x")
+
+
+def test_cli_publish_dry_run_writes_the_card_without_sending(
+    cfg: TaskConfig, test_examples, tmp_path: Path
+) -> None:
+    from distill.paths import RunPaths, write_json
+
+    paths = RunPaths.create(tmp_path / "runs", cfg.name, "20261003-000002")
+    report = evaluate_model(cfg, StubPredictor("Distill", kind="student"), test_examples)
+    write_json(paths.metrics, EvaluationResult(reports=[report]).as_dict())
+    (paths.export_dir / f"{cfg.model_slug}-Q4_K_M.gguf").write_bytes(b"gguf")
+
+    result = runner.invoke(
+        app,
+        [
+            "publish",
+            "--task",
+            str(cfg.source_path),
+            "--runs-dir",
+            str(tmp_path / "runs"),
+            "--run-id",
+            paths.run_id,
+            "--repo",
+            "compte/distill-test",
+            "--dry-run",
+        ],
+    )
+    assert result.exit_code == 0
+    assert "rien n'a ete envoye" in result.stdout
+    assert (paths.export_dir / "README.md").is_file()

@@ -373,6 +373,118 @@ def serve_cmd(
     uvicorn.run("distill.serving.api:app", host=host, port=port, log_level="info")
 
 
+@app.command("review")
+def review_cmd(
+    task: TaskOption,
+    file: Annotated[
+        Path | None,
+        typer.Option("--file", help="Fichier a relire (defaut : le test set de la tache)."),
+    ] = None,
+    limit: Annotated[
+        int | None, typer.Option("--limit", help="S'arreter apres N exemples relus.")
+    ] = None,
+    all_examples: Annotated[
+        bool, typer.Option("--all", help="Repasser aussi sur les exemples deja relus.")
+    ] = False,
+    status: Annotated[
+        bool, typer.Option("--status", help="Afficher l'avancement sans rien relire.")
+    ] = False,
+) -> None:
+    """Relit le test set a la main : valider, corriger ou supprimer, exemple par exemple."""
+    from .review import load_rows, review, stats_for
+
+    cfg = _load(task)
+    target = file or cfg.test_set
+    if target is None or not Path(target).is_file():
+        die("aucun test set a relire : renseigne test_set dans task.yaml ou passe --file")
+        return
+    target = Path(target)
+
+    if status:
+        stats = stats_for(cfg, load_rows(target))
+        console.print(f"{target.name}")
+        console.print(f"  exemples  : {stats.total}")
+        console.print(f"  relus     : {stats.reviewed}")
+        console.print(f"  restants  : {stats.remaining}")
+        if stats.invalid:
+            console.print(f"  [yellow]hors schema : {len(stats.invalid)}[/]")
+        return
+
+    stats = review(
+        cfg,
+        target,
+        prompt=typer.prompt,
+        confirm=typer.confirm,
+        only_pending=not all_examples,
+        limit=limit,
+    )
+    console.print("")
+    console.print(
+        f"{stats.reviewed}/{stats.total} relus · {stats.corrected} corriges · "
+        f"{stats.deleted} supprimes"
+    )
+    if stats.remaining:
+        console.print(
+            f"[dim]{stats.remaining} exemples restants : relance la commande pour continuer.[/]"
+        )
+    else:
+        console.print(
+            "[bold green]test set entierement relu.[/] Les chiffres publies reposent dessus."
+        )
+
+
+@app.command("publish")
+def publish_cmd(
+    task: TaskOption,
+    repo: Annotated[
+        str | None,
+        typer.Option("--repo", help="Depot Hugging Face, ex: compte/distill-email-triage."),
+    ] = None,
+    runs_dir: RunsOption = Path("runs"),
+    run_id: Annotated[str | None, typer.Option("--run-id")] = None,
+    private: Annotated[bool, typer.Option("--private", help="Depot prive.")] = False,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Ecrit la carte de modele sans rien envoyer.")
+    ] = False,
+    yes: Annotated[bool, typer.Option("--yes", "-y", help="Ne demande pas confirmation.")] = False,
+) -> None:
+    """Publie le GGUF, le Modelfile et la carte de modele sur Hugging Face."""
+    from .export.hub import plan_publication, publish
+
+    cfg = _load(task)
+    target = repo or cfg.export.hub_repo
+    if not target:
+        die("indique le depot avec --repo, ou renseigne export.hub_repo dans task.yaml")
+        return
+
+    paths = (
+        RunPaths.create(runs_dir, cfg.name, run_id)
+        if run_id
+        else RunPaths.latest(runs_dir, cfg.name)
+    )
+    if paths is None:
+        die(f"aucun run trouve pour {cfg.name} dans {runs_dir}")
+        return
+    setup_logging(paths.events)
+
+    try:
+        plan = plan_publication(cfg, paths, target, private=private)
+    except DistillError as exc:
+        die(str(exc))
+        return
+
+    console.print(plan.describe())
+    console.print(f"carte de modele : [cyan]{plan.card}[/]")
+    if dry_run:
+        console.print("[dim]--dry-run : rien n'a ete envoye. Relis la carte avant de publier.[/]")
+        return
+
+    # Une publication est publique et difficile a defaire : on confirme.
+    if not yes and not typer.confirm(f"Publier sur {target} ?", default=False):
+        raise typer.Exit(code=1)
+    console.print(f"publie : [cyan]{publish(plan)}[/]")
+
+
 @app.command("watch")
 def watch_cmd(
     task: TaskOption,
