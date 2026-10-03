@@ -6,7 +6,7 @@
 
 [![Licence](https://img.shields.io/badge/licence-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
-[![CI](https://github.com/Abdelilah04116/distill/actions/workflows/ci.yml/badge.svg)](https://github.com/Abdelilah04116/distill/actions/workflows/ci.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/Abdelilah04116/distill/ci.yml?branch=main&label=CI)](https://github.com/Abdelilah04116/distill/actions/workflows/ci.yml)
 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Abdelilah04116/distill/blob/main/notebooks/distill_colab.ipynb)
 
 Une description de tâche, une vingtaine d'exemples, une commande.
