@@ -322,7 +322,7 @@ Les tests ne font aucun appel réseau : le professeur est remplacé par un faux 
 - [notebooks/distill_colab.ipynb](notebooks/distill_colab.ipynb) — le pipeline complet sur un GPU gratuit, de l'installation au GGUF téléchargeable.
 - [demo/](demo/) — la bande VHS qui produit le GIF, et le plan de tournage de la vidéo de 60 à 90 s.
 - [docs/LANCEMENT.md](docs/LANCEMENT.md) — checklist de publication et textes des posts.
-- [docs/article-neurautech.md](docs/article-neurautech.md) — brouillon de l'article technique.
+- [docs/article.md](docs/article.md) — brouillon de l'article technique.
 
 Dans ces trois derniers, les chiffres sont volontairement laissés entre crochets : ne publiez que ce que vous avez mesuré.
 
@@ -332,4 +332,4 @@ Apache 2.0 — voir [LICENSE](LICENSE).
 
 Les modèles élèves (Qwen 2.5, Llama 3.2) et les modèles professeurs restent soumis à leurs licences respectives.
 
-Créé par **Abdelilah OURTI**, AI Engineer — [neurautech.com](https://neurautech.com).
+Créé par **Abdelilah OURTI**, AI Engineer.
