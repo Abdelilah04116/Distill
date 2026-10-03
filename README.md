@@ -321,6 +321,7 @@ Les tests ne font aucun appel réseau : le professeur est remplacé par un faux 
 
 - [notebooks/distill_colab.ipynb](notebooks/distill_colab.ipynb) — le pipeline complet sur un GPU gratuit, de l'installation au GGUF téléchargeable.
 - [demo/](demo/) — la bande VHS qui produit le GIF, et le plan de tournage de la vidéo de 60 à 90 s.
+- [docs/architecture.mmd](docs/architecture.mmd) — le même schéma en Mermaid, pour l'éditer ou l'embarquer ailleurs.
 - [docs/LANCEMENT.md](docs/LANCEMENT.md) — checklist de publication et textes des posts.
 - [docs/article.md](docs/article.md) — brouillon de l'article technique.
 

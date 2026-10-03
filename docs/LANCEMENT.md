@@ -12,7 +12,56 @@ Checklist et textes prêts à publier. Les crochets `[...]` sont les seuls endro
 - [ ] Le modèle GGUF est publié sur Hugging Face avec sa carte de modèle et ses limites.
 - [ ] La vidéo de 60 à 90 s est enregistrée : une commande, le tableau, `ollama run`.
 
-## Les quatre publications
+## Les publications
+
+### 0. Annonce du dépôt — publiable aujourd'hui
+
+À publier avant d'avoir le moindre chiffre. Il parle de la méthode et de l'architecture, pas des résultats, donc il n'engage rien qui ne soit pas vérifiable dans le code. Visuel : `docs/architecture-linkedin.png`. Lien GitHub en premier commentaire.
+
+> Classer un email en cinq catégories ne demande pas un modèle à plusieurs centaines de milliards de paramètres.
+>
+> On continue pourtant à payer pour ça, à chaque requête.
+>
+> J'ai passé les dernières semaines à construire l'alternative, et je viens de l'ouvrir en open source.
+>
+> Le principe : utiliser le gros LLM UNE seule fois, comme professeur, pour former un élève de 1,5 milliard de paramètres qui fait la même tâche en local.
+>
+> Ce n'est pas le fine-tuning qui est difficile. LoRA sur un GPU à 0,60 $ de l'heure, c'est un problème résolu.
+>
+> Le difficile, c'est les données.
+>
+> Demandez 3 000 emails à un gros modèle : vous obtiendrez 3 000 variantes du même email poli, bien ponctué, écrit par la même personne imaginaire. Le petit modèle apprend ça par cœur, puis s'effondre sur du vrai courrier.
+>
+> D'où un système multi-agents, et pas un script :
+>
+> 1. Générateur — tire une persona, un ton, une longueur, un niveau de fautes à chaque lot
+> 2. Critique — déduplique sémantiquement, fait noter chaque exemple de 1 à 5, rejette sous 4
+> 3. Entraîneur — LoRA / QLoRA sur un seul GPU, reprise après interruption
+> 4. Évaluateur — élève contre professeur contre modèle brut, même test set, même prompt
+> 5. Améliorateur — lit les erreurs réelles, génère des exemples ciblés, trois tours maximum
+> 6. Exporteur — GGUF, Modelfile Ollama, API FastAPI, rapport HTML
+>
+> Orchestré par LangGraph avec état persisté : un run coupé reprend où il s'est arrêté.
+>
+> Trois décisions qui déterminent si les chiffres voudront dire quelque chose :
+>
+> → Le test set est écrit à la main et isolé AVANT toute génération. Double garde contre la fuite : empreinte exacte, puis similarité d'embeddings.
+> → Une sortie illisible compte comme une erreur, pas comme une ligne à ignorer.
+> → Le coût local n'est pas zéro : il est dérivé du temps GPU réellement occupé.
+>
+> Objectif affiché : 90 % du score du professeur, 10× moins cher, 5× plus rapide. Je publie les mesures la semaine prochaine, après le premier run complet — avec les cas d'échec, pas seulement les succès. C'est ce qui rend un benchmark croyable.
+>
+> Le code est sous Apache 2.0 et tourne en une commande.
+>
+> Sur quelle tâche répétitive payez-vous encore un modèle généraliste ?
+
+**Premier commentaire** :
+
+> Le dépôt : github.com/abdelilah-ourti/distill
+>
+> Il y a un notebook Colab si vous voulez l'essayer sans GPU : une clé API, et le pipeline tourne de bout en bout sur le T4 gratuit.
+
+**Avant de poster** : si vous avez un cas client réel à raconter en ouverture, remplacez les deux premières lignes par celui-là. Une anecdote vécue vaut mieux qu'une généralité — mais ne racontez que ce qui s'est vraiment passé.
 
 ### 1. Teaser — pendant le sprint 2
 

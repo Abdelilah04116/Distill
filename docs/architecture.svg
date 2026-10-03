@@ -72,15 +72,15 @@
   <line class="edge" x1="612" y1="75" x2="652" y2="75" marker-end="url(#fleche)"/>
 
   <!-- descente vers l'evaluateur -->
-  <path class="edge" d="M 750 106 L 750 196" marker-end="url(#fleche)"/>
+  <path class="edge" d="M 766 106 L 766 196" marker-end="url(#fleche)"/>
 
   <!-- rangee du milieu : ameliorateur <- decision <- evaluateur -->
   <g>
-    <rect class="box" x="660" y="200" width="180" height="62" rx="8"/>
-    <text class="title" x="750" y="226" text-anchor="middle" font-size="14">Évaluateur</text>
-    <text class="sub" x="750" y="246" text-anchor="middle" font-size="11">SLM vs professeur</text>
+    <rect class="box" x="692" y="200" width="148" height="62" rx="8"/>
+    <text class="title" x="766" y="226" text-anchor="middle" font-size="14">Évaluateur</text>
+    <text class="sub" x="766" y="246" text-anchor="middle" font-size="11">SLM vs professeur</text>
 
-    <path class="decision" d="M 500 231 L 590 196 L 680 231 L 590 266 Z"/>
+    <path class="decision" d="M 504 231 L 590 198 L 676 231 L 590 264 Z"/>
     <text class="title" x="590" y="236" text-anchor="middle" font-size="13">Cible atteinte ?</text>
 
     <rect class="box" x="236" y="200" width="180" height="62" rx="8"/>
@@ -88,8 +88,8 @@
     <text class="sub" x="326" y="246" text-anchor="middle" font-size="11">exemples ciblés sur les erreurs</text>
   </g>
 
-  <line class="edge" x1="660" y1="231" x2="684" y2="231" marker-start="url(#fleche)"/>
-  <line class="edge-loop" x1="500" y1="231" x2="424" y2="231" marker-end="url(#fleche-loop)"/>
+  <line class="edge" x1="680" y1="231" x2="692" y2="231" marker-start="url(#fleche)"/>
+  <line class="edge-loop" x1="504" y1="231" x2="424" y2="231" marker-end="url(#fleche-loop)"/>
   <text class="lbl-loop" x="462" y="222" text-anchor="middle" font-size="11">non</text>
 
   <!-- boucle : ameliorateur -> critique, max 3 iterations -->
@@ -97,7 +97,7 @@
   <text class="lbl-loop" x="428" y="142" text-anchor="middle" font-size="11">3 itérations maximum</text>
 
   <!-- sortie : export -->
-  <path class="edge" d="M 590 266 L 590 326" marker-end="url(#fleche)"/>
+  <path class="edge" d="M 590 264 L 590 326" marker-end="url(#fleche)"/>
   <text class="lbl" x="604" y="300" font-size="11">oui</text>
 
   <rect class="box-end" x="468" y="330" width="244" height="66" rx="8"/>

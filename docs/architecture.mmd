@@ -1,0 +1,45 @@
+%% Pipeline Distill — système multi-agents
+%% Rendu PNG :
+%%   npx -p @mermaid-js/mermaid-cli mmdc -i docs/architecture.mmd -o docs/architecture-mermaid.png -s 3 -b white
+%% Ou colle ce fichier dans https://mermaid.live
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Segoe UI, Helvetica, Arial, sans-serif", "fontSize": "15px", "lineColor": "#94938b"}, "flowchart": {"nodeSpacing": 45, "rankSpacing": 55, "curve": "basis"}}}%%
+flowchart LR
+    TASK["<b>task.yaml</b><br/>1 description + 20 exemples"]
+
+    subgraph SMA["6 agents, 1 boucle — orchestrés par LangGraph"]
+        direction LR
+        GEN["<b>Générateur</b><br/>2 à 5k exemples variés"]
+        CRI["<b>Critique</b><br/>dédup + juge LLM 1→5"]
+        TRA["<b>Entraîneur</b><br/>LoRA sur 1 GPU"]
+        EVA["<b>Évaluateur</b><br/>élève vs professeur vs brut"]
+        DEC{"<b>≥ 90 %</b><br/>du professeur ?"}
+        AME["<b>Améliorateur</b><br/>exemples ciblés sur les erreurs"]
+
+        GEN --> CRI --> TRA --> EVA --> DEC
+        DEC -->|non| AME
+        AME -->|3 tours max| CRI
+    end
+
+    PROF[("<b>LLM professeur</b><br/>une seule fois,<br/>jamais en production")]
+    EXP["<b>Exporteur</b><br/>GGUF · Ollama · FastAPI"]
+    SLM(["<b>SLM local 0,5–3 B</b><br/>10× moins cher, 5× plus rapide<br/>0 donnée envoyée au cloud"])
+
+    TASK --> GEN
+    DEC -->|oui| EXP --> SLM
+    PROF -.-> GEN
+    PROF -.-> CRI
+    PROF -.-> EVA
+
+    classDef agent fill:#ffffff,stroke:#2a78d6,stroke-width:2px,color:#0b0b0b
+    classDef prof fill:#fdf1ea,stroke:#eb6834,stroke-width:2px,color:#0b0b0b
+    classDef entree fill:#f2f1ed,stroke:#94938b,stroke-width:1.5px,color:#0b0b0b
+    classDef sortie fill:#e9f2fd,stroke:#2a78d6,stroke-width:3px,color:#0b0b0b
+    classDef choix fill:#fdf1ea,stroke:#eb6834,stroke-width:2px,color:#0b0b0b
+
+    class GEN,CRI,TRA,EVA,AME agent
+    class PROF prof
+    class TASK entree
+    class EXP,SLM sortie
+    class DEC choix
+
+    style SMA fill:#fbfbfa,stroke:#dcdbd4,stroke-width:1.5px,color:#52514e
