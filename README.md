@@ -4,7 +4,7 @@
 
 **Ton propre modèle, spécialisé, local et 10× moins cher — sans écrire une ligne de code d'entraînement.**
 
-[![Licence](https://img.shields.io/badge/licence-Apache%202.0-blue.svg)](LICENSE)
+[![Licence](https://img.shields.io/badge/licence-Apache%202.0-blue.svg)](https://github.com/Abdelilah04116/distill/blob/main/LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![CI](https://img.shields.io/github/actions/workflow/status/Abdelilah04116/distill/ci.yml?branch=main&label=CI)](https://github.com/Abdelilah04116/distill/actions/workflows/ci.yml)
 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Abdelilah04116/distill/blob/main/notebooks/distill_colab.ipynb)
@@ -31,23 +31,23 @@ ollama run distill-email-triage
 ## Ce que ça fait, étape par étape
 
 <div align="center">
-  <img src="docs/architecture.svg" alt="task.yaml alimente le Générateur, puis le Critique, puis l'Entraînement LoRA, puis l'Évaluateur. Si la cible n'est pas atteinte, l'Améliorateur produit des exemples ciblés et renvoie au Critique, trois fois au maximum. Sinon, le pipeline exporte en GGUF, Ollama et FastAPI." width="880">
+  <img src="https://raw.githubusercontent.com/Abdelilah04116/distill/main/docs/architecture-linkedin.png" alt="task.yaml alimente le Générateur, puis le Critique, puis l'Entraînement LoRA, puis l'Évaluateur. Si la cible n'est pas atteinte, l'Améliorateur produit des exemples ciblés et renvoie au Critique, trois fois au maximum. Sinon, le pipeline exporte en GGUF, Ollama et FastAPI." width="880">
 </div>
 
 | Agent | Rôle | Fichier |
 |---|---|---|
-| **Générateur** | 2 000 à 5 000 exemples synthétiques, variés par persona, ton, longueur, fautes, cas limites | [generator.py](distill/agents/generator.py) |
-| **Critique** | dédup exacte et sémantique, LLM-as-judge (note 1–5), équilibre des classes, isolation du test set | [critic.py](distill/agents/critic.py) |
-| **Entraînement** | LoRA / QLoRA sur un seul GPU, courbe de loss en temps réel, reprise après interruption | [lora_trainer.py](distill/training/lora_trainer.py) |
-| **Évaluateur** | élève, professeur et baseline sur le même test set, F1 par classe, latence, coût | [evaluator.py](distill/agents/evaluator.py) |
-| **Améliorateur** | lit les erreurs réelles, génère des exemples ciblés, relance (3 fois maximum) | [improver.py](distill/agents/improver.py) |
-| **Export** | fusion LoRA, GGUF (Q4_K_M, Q8_0), Modelfile Ollama, API FastAPI, rapport HTML | [export/](distill/export/) |
+| **Générateur** | 2 000 à 5 000 exemples synthétiques, variés par persona, ton, longueur, fautes, cas limites | [generator.py](https://github.com/Abdelilah04116/distill/blob/main/distill/agents/generator.py) |
+| **Critique** | dédup exacte et sémantique, LLM-as-judge (note 1–5), équilibre des classes, isolation du test set | [critic.py](https://github.com/Abdelilah04116/distill/blob/main/distill/agents/critic.py) |
+| **Entraînement** | LoRA / QLoRA sur un seul GPU, courbe de loss en temps réel, reprise après interruption | [lora_trainer.py](https://github.com/Abdelilah04116/distill/blob/main/distill/training/lora_trainer.py) |
+| **Évaluateur** | élève, professeur et baseline sur le même test set, F1 par classe, latence, coût | [evaluator.py](https://github.com/Abdelilah04116/distill/blob/main/distill/agents/evaluator.py) |
+| **Améliorateur** | lit les erreurs réelles, génère des exemples ciblés, relance (3 fois maximum) | [improver.py](https://github.com/Abdelilah04116/distill/blob/main/distill/agents/improver.py) |
+| **Export** | fusion LoRA, GGUF (Q4_K_M, Q8_0), Modelfile Ollama, API FastAPI, rapport HTML | [export/](https://github.com/Abdelilah04116/distill/tree/main/distill/export/) |
 
-L'orchestration est un graphe LangGraph avec état persisté ([graph.py](distill/graph.py)) : un run interrompu reprend là où il s'est arrêté. Si LangGraph n'est pas installé, le même enchaînement tourne en séquentiel.
+L'orchestration est un graphe LangGraph avec état persisté ([graph.py](https://github.com/Abdelilah04116/distill/blob/main/distill/graph.py)) : un run interrompu reprend là où il s'est arrêté. Si LangGraph n'est pas installé, le même enchaînement tourne en séquentiel.
 
 ## Installation
 
-Le paquet n'est pas encore sur PyPI. Pour l'instant, on installe depuis le dépôt :
+Le paquet n'est pas encore publié sur PyPI ([comment le publier](https://github.com/Abdelilah04116/distill/blob/main/docs/PUBLICATION.md)). Pour l'instant, on installe depuis le dépôt :
 
 ```bash
 git clone https://github.com/Abdelilah04116/distill && cd distill
@@ -159,7 +159,7 @@ budget:
   max_duration_min: 120
 ```
 
-L'exemple complet et commenté : [examples/email-triage/task.yaml](examples/email-triage/task.yaml).
+L'exemple complet et commenté : [examples/email-triage/task.yaml](https://github.com/Abdelilah04116/distill/blob/main/examples/email-triage/task.yaml).
 
 ### Mode 100 % local (RGPD strict)
 
@@ -186,7 +186,7 @@ La crédibilité du projet tient à un benchmark honnête. Les règles sont appl
 
 1. **Le test set est isolé avant toute génération.** Il n'entre jamais dans l'entraînement.
 2. **Double garde contre la fuite.** Dédup exacte par empreinte, puis dédup sémantique par embeddings contre le test set — un exemple généré trop proche d'un exemple de test est jeté, pas utilisé.
-3. **Mêmes entrées, même prompt d'inférence pour tous les modèles.** Le professeur ne bénéficie d'aucun prompt enrichi ([prompts.py](distill/prompts.py) est la source unique).
+3. **Mêmes entrées, même prompt d'inférence pour tous les modèles.** Le professeur ne bénéficie d'aucun prompt enrichi ([prompts.py](https://github.com/Abdelilah04116/distill/blob/main/distill/prompts.py) est la source unique).
 4. **Une sortie illisible est une erreur**, pas une ligne à ignorer. Un modèle qui répond n'importe quoi une fois sur dix n'obtient pas 100 % sur les neuf autres.
 5. **Une baseline est systématiquement mesurée** : le même petit modèle sans fine-tuning. C'est ce qui prouve l'apport de la distillation plutôt que celui du modèle de base.
 6. **Les échecs sont publiés.** Le rapport HTML contient les erreurs réelles de l'élève, non sélectionnées.
@@ -225,7 +225,7 @@ Objectifs de la v1 : **≥ 90 %** du score du professeur, **≥ 10×** moins che
 | 1.5B | ~8 Go | Colab / Kaggle gratuit, RTX 3060 |
 | 3B | ~14 Go | RTX 4090, L4, A10 |
 
-Sans GPU local, le notebook [`notebooks/distill_colab.ipynb`](notebooks/distill_colab.ipynb) exécute le pipeline complet sur le T4 gratuit de Colab ou Kaggle, compilation de llama.cpp et export GGUF compris. Sinon, tout le reste fonctionne sur CPU — génération, critique, évaluation d'un modèle Ollama, rapport — avec `--skip-training`.
+Sans GPU local, le notebook [`notebooks/distill_colab.ipynb`](https://github.com/Abdelilah04116/distill/blob/main/notebooks/distill_colab.ipynb) exécute le pipeline complet sur le T4 gratuit de Colab ou Kaggle, compilation de llama.cpp et export GGUF compris. Sinon, tout le reste fonctionne sur CPU — génération, critique, évaluation d'un modèle Ollama, rapport — avec `--skip-training`.
 
 ## Structure du dépôt
 
@@ -329,21 +329,22 @@ ruff check distill
 mypy distill
 ```
 
-Les tests ne font aucun appel réseau : le professeur est remplacé par un faux déterministe ([tests/conftest.py](tests/conftest.py)).
+Les tests ne font aucun appel réseau : le professeur est remplacé par un faux déterministe ([tests/conftest.py](https://github.com/Abdelilah04116/distill/blob/main/tests/conftest.py)).
 
 ## Aller plus loin
 
-- [notebooks/distill_colab.ipynb](notebooks/distill_colab.ipynb) — le pipeline complet sur un GPU gratuit, de l'installation au GGUF téléchargeable.
-- [demo/](demo/) — la bande VHS qui produit le GIF, et le plan de tournage de la vidéo de 60 à 90 s.
-- [docs/architecture.mmd](docs/architecture.mmd) — le même schéma en Mermaid, pour l'éditer ou l'embarquer ailleurs.
-- [docs/LANCEMENT.md](docs/LANCEMENT.md) — checklist de publication et textes des posts.
-- [docs/article.md](docs/article.md) — brouillon de l'article technique.
+- [notebooks/distill_colab.ipynb](https://github.com/Abdelilah04116/distill/blob/main/notebooks/distill_colab.ipynb) — le pipeline complet sur un GPU gratuit, de l'installation au GGUF téléchargeable.
+- [demo/](https://github.com/Abdelilah04116/distill/tree/main/demo/) — la bande VHS qui produit le GIF, et le plan de tournage de la vidéo de 60 à 90 s.
+- [docs/architecture.mmd](https://github.com/Abdelilah04116/distill/blob/main/docs/architecture.mmd) — le même schéma en Mermaid, pour l'éditer ou l'embarquer ailleurs.
+- [docs/LANCEMENT.md](https://github.com/Abdelilah04116/distill/blob/main/docs/LANCEMENT.md) — checklist de publication et textes des posts.
+- [docs/article.md](https://github.com/Abdelilah04116/distill/blob/main/docs/article.md) — brouillon de l'article technique.
+- [docs/PUBLICATION.md](https://github.com/Abdelilah04116/distill/blob/main/docs/PUBLICATION.md) — publier le paquet sur PyPI, étape par étape.
 
 Dans ces trois derniers, les chiffres sont volontairement laissés entre crochets : ne publiez que ce que vous avez mesuré.
 
 ## Licence et crédits
 
-Apache 2.0 — voir [LICENSE](LICENSE).
+Apache 2.0 — voir [LICENSE](https://github.com/Abdelilah04116/distill/blob/main/LICENSE).
 
 Les modèles élèves (Qwen 2.5, Llama 3.2) et les modèles professeurs restent soumis à leurs licences respectives.
 

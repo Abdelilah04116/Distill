@@ -1,0 +1,110 @@
+name: Publication PyPI
+
+# Deux declencheurs :
+#   - un tag vX.Y.Z pousse        -> publication sur PyPI
+#   - un lancement manuel          -> publication sur TestPyPI, pour repeter
+#
+# Aucun jeton n'est stocke : l'authentification passe par le trusted publishing
+# de PyPI, qui verifie l'identite du workflow via OIDC. Il faut l'avoir declare
+# une fois sur pypi.org (voir README, section Publication).
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      cible:
+        description: "Ou publier"
+        required: true
+        default: testpypi
+        type: choice
+        options: [testpypi, pypi]
+
+permissions:
+  contents: read
+
+jobs:
+  verifier:
+    name: tests avant publication
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev,serve,graph]"
+      - run: ruff check distill tests
+      - run: mypy distill
+      - run: pytest -q
+
+  construire:
+    name: construire la distribution
+    needs: verifier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verifier que le tag correspond a la version du paquet
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          version=$(python -c "import tomllib,pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          tag="${GITHUB_REF_NAME#v}"
+          if [ "$version" != "$tag" ]; then
+            echo "::error::le tag $tag ne correspond pas a project.version ($version)"
+            exit 1
+          fi
+          echo "version $version == tag $tag"
+
+      - name: Construire
+        run: |
+          python -m pip install --upgrade pip build twine
+          python -m build
+          twine check --strict dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  testpypi:
+    name: publier sur TestPyPI
+    needs: construire
+    if: github.event_name == 'workflow_dispatch' && inputs.cible == 'testpypi'
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/distill-slm
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          # Republier la meme version sur TestPyPI est frequent pendant les essais.
+          skip-existing: true
+
+  pypi:
+    name: publier sur PyPI
+    needs: construire
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.cible == 'pypi')
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/distill-slm
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
