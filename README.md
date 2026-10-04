@@ -4,6 +4,7 @@
 
 **Ton propre modèle, spécialisé, local et 10× moins cher — sans écrire une ligne de code d'entraînement.**
 
+[![PyPI](https://img.shields.io/pypi/v/distill-slm.svg)](https://pypi.org/project/distill-slm/)
 [![Licence](https://img.shields.io/badge/licence-Apache%202.0-blue.svg)](https://github.com/Abdelilah04116/distill/blob/main/LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![CI](https://img.shields.io/github/actions/workflow/status/Abdelilah04116/distill/ci.yml?branch=main&label=CI)](https://github.com/Abdelilah04116/distill/actions/workflows/ci.yml)
@@ -47,15 +48,16 @@ L'orchestration est un graphe LangGraph avec état persisté ([graph.py](https:/
 
 ## Installation
 
-Le paquet n'est pas encore publié sur PyPI ([comment le publier](https://github.com/Abdelilah04116/distill/blob/main/docs/PUBLICATION.md)). Pour l'instant, on installe depuis le dépôt :
+```bash
+pip install distill-slm              # noyau : CLI, agents, évaluation, rapport
+pip install "distill-slm[all]"       # + LangGraph, Qdrant, embeddings, FastAPI
+pip install "distill-slm[train]"     # + torch, transformers, peft, trl (GPU)
+```
+
+Les exemples de tâche (`task.yaml`, seeds, test set) vivent dans le dépôt, pas dans le paquet. Pour suivre le démarrage rapide ci-dessous, clonez-le aussi :
 
 ```bash
 git clone https://github.com/Abdelilah04116/distill && cd distill
-python -m venv .venv && source .venv/bin/activate   # .venv\Scriptsctivate sous Windows
-
-pip install -e .                 # noyau : CLI, agents, évaluation, rapport
-pip install -e ".[all]"          # + LangGraph, Qdrant, embeddings, FastAPI
-pip install -e ".[train]"        # + torch, transformers, peft, trl (GPU)
 ```
 
 Pour l'entraînement, Unsloth est optionnel mais recommandé — il est deux fois plus rapide et tient dans moins de VRAM :
@@ -338,7 +340,7 @@ Les tests ne font aucun appel réseau : le professeur est remplacé par un faux 
 - [docs/architecture.mmd](https://github.com/Abdelilah04116/distill/blob/main/docs/architecture.mmd) — le même schéma en Mermaid, pour l'éditer ou l'embarquer ailleurs.
 - [docs/LANCEMENT.md](https://github.com/Abdelilah04116/distill/blob/main/docs/LANCEMENT.md) — checklist de publication et textes des posts.
 - [docs/article.md](https://github.com/Abdelilah04116/distill/blob/main/docs/article.md) — brouillon de l'article technique.
-- [docs/PUBLICATION.md](https://github.com/Abdelilah04116/distill/blob/main/docs/PUBLICATION.md) — publier le paquet sur PyPI, étape par étape.
+- [docs/PUBLICATION.md](https://github.com/Abdelilah04116/distill/blob/main/docs/PUBLICATION.md) — publier une nouvelle version sur PyPI.
 
 Dans ces trois derniers, les chiffres sont volontairement laissés entre crochets : ne publiez que ce que vous avez mesuré.
 

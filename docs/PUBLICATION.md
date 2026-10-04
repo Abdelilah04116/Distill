@@ -1,6 +1,23 @@
 # Publier `distill-slm` sur PyPI
 
-Le nom `distill-slm` est libre (vérifié le 4 octobre 2026 — `distill` tout court est déjà pris). Le paquet se construit et passe `twine check --strict`. Il reste à décider *quand* publier, puis à le faire.
+**La version 0.1.0 est publiée** depuis le 4 octobre 2026 : [pypi.org/project/distill-slm](https://pypi.org/project/distill-slm/). Ce document sert désormais aux versions suivantes.
+
+## Piège rencontré au premier envoi
+
+Si `twine` échoue sur `OSError: Could not find a suitable TLS CA certificate bundle`, c'est l'installeur PostgreSQL qui a défini `CURL_CA_BUNDLE` au niveau Machine vers un fichier absent. `requests` la lit avant son propre magasin, donc toute requête HTTPS Python casse. Correctif ponctuel :
+
+```powershell
+Remove-Item Env:CURL_CA_BUNDLE
+```
+
+Correctif durable, sans droits administrateur (une variable Utilisateur prend le pas sur la Machine) :
+
+```powershell
+$dest = "$env:USERPROFILE\.certs\ca-bundle.crt"
+New-Item -ItemType Directory -Force (Split-Path $dest) | Out-Null
+Copy-Item (python -c "import certifi;print(certifi.where())") $dest
+[Environment]::SetEnvironmentVariable('CURL_CA_BUNDLE', $dest, 'User')
+```
 
 ## Avant de publier
 
