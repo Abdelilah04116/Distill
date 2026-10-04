@@ -12,9 +12,12 @@ branches ci-dessous :
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
 from typing import Any
 
 from ..config import TeacherConfig
+from ..errors import ConfigError, DependencyError
 from .base import BaseTeacher, LLMResponse, Prompt
 
 # Modeles qui rejettent temperature / top_p / top_k (erreur 400).
@@ -45,16 +48,32 @@ class AnthropicTeacher(BaseTeacher):
         try:
             import anthropic
         except ImportError as exc:  # pragma: no cover - depend de l'installation
-            raise RuntimeError(
+            raise DependencyError(
                 "le paquet 'anthropic' est requis pour provider: anthropic (pip install anthropic)"
             ) from exc
         self._sdk = anthropic
-        import os
 
         api_key = os.environ.get(self.cfg.api_key_env)
         # Sans cle explicite, le SDK retombe sur le profil OAuth local
         # (`ant auth login`) : ne pas forcer api_key=None a la main.
+        if not api_key and not self._has_local_profile():
+            # Echouer ici plutot qu'au premier appel : sinon la generation
+            # rend zero exemple et l'erreur remonte trois etapes plus loin,
+            # en accusant le Critique d'avoir tout rejete.
+            raise ConfigError(
+                "aucun identifiant pour le professeur Anthropic. "
+                f"Definis {self.cfg.api_key_env} (ou lance `ant auth login`). "
+                "Pour un run sans cle ni cout, utilise un professeur local : voir le bloc "
+                "teacher commente dans examples/email-triage/task.yaml."
+            )
         self._client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
+
+    @staticmethod
+    def _has_local_profile() -> bool:
+        """Vrai si `ant auth login` a laisse un profil que le SDK saura lire."""
+        if os.environ.get("ANTHROPIC_AUTH_TOKEN"):
+            return True
+        return (Path.home() / ".config" / "anthropic").is_dir()
 
     @property
     def _supports_sampling(self) -> bool:

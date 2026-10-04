@@ -19,6 +19,7 @@ from typing import Any
 
 from rich.console import Console
 from rich.logging import RichHandler
+from rich.markup import escape
 
 #: sortie destinee a l'utilisateur (tableaux, resultats) -> stdout
 console = Console()
@@ -113,7 +114,11 @@ def step(stage: str, title: str, **fields: Any) -> Iterator[dict[str, Any]]:
 
 
 def die(message: str, code: int = 1) -> None:
-    """Sortie d'erreur propre pour la CLI."""
-    log_console.print(f"[bold red]Erreur[/] {message}")
-    console.print(f"Erreur : {message}")
+    """Sortie d'erreur propre pour la CLI.
+
+    Le message est echappe : il contient souvent des crochets - un conseil
+    d'installation comme 'distill-slm[train]', un chemin, une liste - que Rich
+    prendrait pour du balisage et avalerait silencieusement.
+    """
+    console.print(f"[bold red]Erreur[/] {escape(message)}")
     sys.exit(code)

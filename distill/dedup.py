@@ -89,7 +89,7 @@ def get_embedder(model_name: str) -> Embedder:
     except Exception as exc:  # noqa: BLE001 - toute panne de chargement doit replier
         get_logger().warning(
             f"[yellow]sentence-transformers indisponible[/] ({type(exc).__name__}), "
-            "repli sur l'encodeur de hachage (pip install 'distill-slm[dedup]' pour la version complete)"
+            "repli sur l'encodeur de hachage (pip install 'distill-slm\[dedup]' pour la version complete)"
         )
         return HashingEmbedder()
 

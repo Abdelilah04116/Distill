@@ -16,6 +16,7 @@ from typing import Any
 import httpx
 
 from ..config import TeacherConfig
+from ..errors import ConfigError
 from .base import BaseTeacher, LLMResponse, Prompt
 
 DEFAULT_TIMEOUT = httpx.Timeout(600.0, connect=10.0)
@@ -41,6 +42,26 @@ class OpenAICompatibleTeacher(BaseTeacher):
             headers=headers,
             timeout=DEFAULT_TIMEOUT,
         )
+        self._check_reachable()
+
+    def _check_reachable(self) -> None:
+        """Verifie que le serveur repond avant de lancer la generation.
+
+        Sans ce controle, un serveur eteint produit quatre tentatives avec
+        backoff par appel, puis un run vide : vingt secondes d'attente pour
+        apprendre qu'Ollama n'etait pas demarre.
+        """
+        try:
+            self._client.get("/models", timeout=5.0)
+        except httpx.ConnectError as exc:
+            raise ConfigError(
+                f"aucun serveur ne repond sur {self.cfg.base_url}. "
+                "Demarre-le avant le run : `ollama serve` (puis `ollama pull "
+                f"{self.cfg.model}`), ou `vllm serve {self.cfg.model}`."
+            ) from exc
+        except httpx.HTTPError:
+            # Le serveur repond mais n'expose pas /models : c'est permis.
+            return
 
     def _call(self, prompt: Prompt, max_tokens: int) -> LLMResponse:
         payload: dict[str, Any] = {

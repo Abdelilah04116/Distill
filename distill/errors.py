@@ -27,5 +27,9 @@ class ExportError(DistillError):
     """La fusion LoRA, la quantification GGUF ou l'export Ollama a echoue."""
 
 
+class DependencyError(DistillError):
+    """Un extra optionnel est requis et absent (torch, fastapi, qdrant, ...)."""
+
+
 class TrainingError(DistillError):
     """L'entrainement a echoue ou les dependances sont absentes."""

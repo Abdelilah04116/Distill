@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from ..config import TaskConfig
+from ..errors import DependencyError
 from ..prompts import chat_messages
 from .base import Prediction, Predictor
 
@@ -34,7 +35,7 @@ class HFPredictor(Predictor):
             import torch
             from transformers import AutoModelForCausalLM, AutoTokenizer
         except ImportError as exc:  # pragma: no cover - depend de l'installation
-            raise RuntimeError(
+            raise DependencyError(
                 "transformers et torch sont requis pour evaluer l'eleve localement "
                 "(pip install 'distill-slm[train]')"
             ) from exc

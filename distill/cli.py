@@ -19,7 +19,7 @@ from rich.table import Table
 
 from . import __version__
 from .config import TaskConfig
-from .costs import estimate_generation_cost
+from .costs import estimate_generation_cost, over_budget_hint
 from .errors import DistillError
 from .logging_utils import console, die, setup_logging
 from .paths import RunPaths, cache_dir
@@ -136,6 +136,10 @@ def run(
             border_style="cyan",
         )
     )
+    hint = over_budget_hint(estimate, cfg.budget.max_cost_usd, cfg.generation.n_examples)
+    if hint:
+        console.print(f"[bold yellow]Attention[/] {hint}")
+
     if dry_run:
         console.print("[dim]--dry-run : rien n'a ete lance.[/]")
         raise typer.Exit()
@@ -564,6 +568,9 @@ def estimate_cmd(task: TaskOption) -> None:
     console.print(
         f"estimation : [bold]~{estimate:.2f} $[/] (plafond {cfg.budget.max_cost_usd:.2f} $)"
     )
+    hint = over_budget_hint(estimate, cfg.budget.max_cost_usd, cfg.generation.n_examples)
+    if hint:
+        console.print(f"[bold yellow]Attention[/] {hint}")
     if cfg.teacher.is_local:
         console.print(
             "[green]professeur local : aucun cout API, aucune donnee envoyee au cloud.[/]"

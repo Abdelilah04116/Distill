@@ -8,7 +8,8 @@ Checklist et textes prêts à publier. Les crochets `[...]` sont les seuls endro
 - [ ] Le test set a été relu à la main, ligne par ligne. C'est la garantie du benchmark.
 - [ ] Les trois tailles d'élève (0.5B, 1.5B, 3B) ont tourné sur le même corpus.
 - [ ] La baseline (modèle brut, sans fine-tuning) figure dans le tableau.
-- [ ] Le dépôt est public, `pip install distill-slm` fonctionne depuis un environnement neuf.
+- [ ] Le dépôt est public et `git clone` + `pip install -e .` fonctionne depuis un environnement neuf.
+- [ ] Si vous annoncez `pip install distill-slm`, le paquet est effectivement publié sur PyPI.
 - [ ] Le modèle GGUF est publié sur Hugging Face avec sa carte de modèle et ses limites.
 - [ ] La vidéo de 60 à 90 s est enregistrée : une commande, le tableau, `ollama run`.
 

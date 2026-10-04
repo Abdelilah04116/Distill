@@ -47,10 +47,15 @@ L'orchestration est un graphe LangGraph avec état persisté ([graph.py](distill
 
 ## Installation
 
+Le paquet n'est pas encore sur PyPI. Pour l'instant, on installe depuis le dépôt :
+
 ```bash
-pip install distill-slm              # noyau : CLI, agents, évaluation, rapport
-pip install "distill-slm[all]"       # + LangGraph, Qdrant, embeddings, FastAPI
-pip install "distill-slm[train]"     # + torch, transformers, peft, trl (GPU)
+git clone https://github.com/Abdelilah04116/distill && cd distill
+python -m venv .venv && source .venv/bin/activate   # .venv\Scriptsctivate sous Windows
+
+pip install -e .                 # noyau : CLI, agents, évaluation, rapport
+pip install -e ".[all]"          # + LangGraph, Qdrant, embeddings, FastAPI
+pip install -e ".[train]"        # + torch, transformers, peft, trl (GPU)
 ```
 
 Pour l'entraînement, Unsloth est optionnel mais recommandé — il est deux fois plus rapide et tient dans moins de VRAM :
@@ -67,20 +72,29 @@ cmake -B build && cmake --build build --config Release
 export LLAMA_CPP_DIR=$PWD
 ```
 
-Et une clé pour le professeur :
+## Démarrage rapide
+
+Il faut une clé pour le professeur, ou un modèle local qui en tient lieu.
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-## Démarrage rapide
+**Sans clé et sans budget**, le dépôt fournit une variante entièrement locale, où le professeur est un modèle open-weight servi par Ollama. Rien ne sort de la machine, rien n'est facturé :
+
+```bash
+ollama pull qwen2.5:7b-instruct
+distill run --task examples/email-triage/task.local.yaml
+```
+
+Le parcours complet sur la tâche de démonstration :
 
 ```bash
 # 1. Vérifier la tâche et les exemples avant de dépenser quoi que ce soit
 distill validate --task examples/email-triage/task.yaml
 distill estimate --task examples/email-triage/task.yaml
 
-# 2. Lancer le pipeline complet
+# 2. Lancer le pipeline complet (~4 $ de professeur, plafonné à 6 $)
 distill run --task examples/email-triage/task.yaml
 
 # 3. Essayer le modèle

@@ -473,3 +473,22 @@ def test_cli_publish_dry_run_writes_the_card_without_sending(
     assert result.exit_code == 0
     assert "rien n'a ete envoye" in result.stdout
     assert (paths.export_dir / "README.md").is_file()
+
+
+# --------------------------------------------------------------------- garde-fous
+
+
+def test_a_generation_that_produces_nothing_stops_the_run(pipeline) -> None:  # type: ignore[no-untyped-def]
+    """Zero exemple genere doit nommer la vraie cause, pas blamer le Critique."""
+    from distill.errors import DistillError
+
+    cfg, options, _mode, teachers = pipeline
+    ctx = build_context(cfg, options)
+    teachers[0].break_json = True  # le professeur repond, mais rien d'exploitable
+
+    with pytest.raises(DistillError) as exc:
+        run_sequential(ctx)
+    message = str(exc.value)
+    assert "aucun exemple exploitable" in message
+    assert "Critique" not in message
+    assert "events.jsonl" in message

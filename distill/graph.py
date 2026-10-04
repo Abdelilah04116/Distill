@@ -33,7 +33,7 @@ from .agents.generator import generate
 from .agents.improver import improve
 from .cache import DiskCache
 from .config import TaskConfig
-from .costs import CostTracker, estimate_generation_cost
+from .costs import CostTracker, estimate_generation_cost, over_budget_hint
 from .data import Example, examples_from_inline, load_examples, save_examples
 from .errors import BudgetExceeded, DistillError
 from .logging_utils import get_logger, log_event, setup_logging, step
@@ -156,6 +156,10 @@ def node_prepare(ctx: PipelineContext, state: PipelineState) -> PipelineState:
             f"(plafond {cfg.budget.max_cost_usd:.2f} USD, duree max {cfg.budget.max_duration_min} min)"
         )
         info["estimated_usd"] = round(estimate, 3)
+        hint = over_budget_hint(estimate, cfg.budget.max_cost_usd, cfg.generation.n_examples)
+        if hint:
+            log.warning(f"[yellow]{hint}[/]")
+            state = {**state, "warnings": [*state.get("warnings", []), hint]}
 
     return {**state, "warnings": list(state.get("warnings", []))}
 
@@ -177,6 +181,15 @@ def node_generate(ctx: PipelineContext, state: PipelineState) -> PipelineState:
         # Plafond atteint pendant la generation : on s'arrete ici plutot que
         # d'entrainer sur un corpus tronque en silence.
         ctx.tracker.check()
+        if not all_examples:
+            # Sans ce garde-fou, le pipeline continue avec zero exemple et
+            # echoue a l'entrainement en accusant le Critique.
+            raise DistillError(
+                f"le professeur n'a produit aucun exemple exploitable sur "
+                f"{result.stats.calls} appels. Causes usuelles : identifiants invalides, "
+                "quota epuise, ou reponses hors schema. Relance avec --verbose, "
+                f"le detail est dans {ctx.paths.events}."
+            )
 
     return {
         **state,
@@ -604,7 +617,9 @@ def run_pipeline(
             state: PipelineState = graph.invoke(_initial_state(ctx), config=config)
             ctx.save_state(state)
         else:
-            log.info("langgraph absent : execution sequentielle (pip install 'distill-slm[graph]')")
+            log.info(
+                "langgraph absent : execution sequentielle (pip install 'distill-slm\[graph]')"
+            )
             state = run_sequential(ctx)
     except BudgetExceeded as exc:
         log.warning(f"[yellow]{exc}[/]")

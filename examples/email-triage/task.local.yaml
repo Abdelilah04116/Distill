@@ -1,0 +1,113 @@
+# Variante 100 % locale et gratuite de la tache de demonstration.
+#
+# Aucune cle API, aucun cout, aucune donnee qui quitte la machine. Le
+# professeur est un modele open-weight servi par Ollama, via son endpoint
+# compatible OpenAI.
+#
+# Prerequis :
+#   1. installer Ollama : https://ollama.com
+#   2. recuperer le professeur :  ollama pull qwen2.5:7b-instruct
+#   3. lancer :  distill run --task examples/email-triage/task.local.yaml
+#
+# C'est plus lent qu'un professeur hebergé et la qualite du corpus est plus
+# basse, donc les volumes sont reduits. L'objectif ici est de voir le pipeline
+# tourner de bout en bout, pas de battre un record.
+
+name: email-triage-local
+description: >-
+  Tu tries les emails recus par le service client d'une PME francaise.
+  Pour chaque email, tu determines sa categorie, son niveau d'urgence, et tu
+  en ecris un resume d'une seule ligne, factuel, de quinze mots maximum.
+language: francais
+seed: 42
+
+output_schema:
+  type: object
+  additionalProperties: false
+  required: [categorie, urgence, resume]
+  properties:
+    categorie:
+      type: string
+      enum: [reclamation, facturation, technique, commercial, autre]
+      description: >-
+        reclamation = mecontentement sur un produit, un service ou un delai ;
+        facturation = facture, paiement, remboursement, devis, prelevement ;
+        technique = panne, bug, probleme de connexion ou d'installation ;
+        commercial = demande d'offre, de prix, de demonstration, de contrat ;
+        autre = tout le reste (candidature, spam, hors sujet, remerciement).
+    urgence:
+      type: string
+      enum: [basse, moyenne, haute]
+      description: >-
+        haute = service interrompu, client bloque, delai legal ou menace de
+        resiliation ; moyenne = demande normale avec attente de reponse ;
+        basse = information, remerciement, sujet sans echeance.
+    resume:
+      type: string
+      description: Resume factuel d'une ligne, quinze mots maximum, sans formule de politesse.
+
+seeds: seeds.jsonl
+test_set: test_set.jsonl
+
+teacher:
+  provider: openai_compatible
+  base_url: http://localhost:11434/v1
+  model: qwen2.5:7b-instruct
+  # Ollama ne verifie pas le jeton ; la variable peut rester vide.
+  api_key_env: DISTILL_TEACHER_API_KEY
+  # Les modeles locaux acceptent la temperature, contrairement aux Claude recents.
+  temperature: 0.9
+  max_tokens: 4096
+  # Un serveur local sature vite : deux requetes en parallele suffisent.
+  concurrency: 2
+  use_cache: true
+  server_side_fallback: false
+
+student:
+  # Le plus petit eleve du perimetre : tient sur un GPU 4 Go, s'entraine vite.
+  model: Qwen/Qwen2.5-0.5B-Instruct
+  max_seq_length: 1024
+  load_in_4bit: true
+
+budget:
+  max_examples: 600
+  # Zero cout API : le plafond ne sert qu'a borner le nombre d'appels.
+  max_cost_usd: 0.0
+  max_duration_min: 180
+
+generation:
+  n_examples: 600
+  examples_per_call: 8
+  seeds_per_prompt: 3
+  tones: [neutre, enerve, poli, presse]
+  lengths: [tres court, moyen]
+  noise_ratio: 0.3
+  edge_case_ratio: 0.2
+
+critic:
+  judge_threshold: 3
+  judge_batch_size: 4
+  dedup_threshold: 0.92
+  min_class_ratio: 0.08
+
+training:
+  lora_r: 16
+  lora_alpha: 32
+  learning_rate: 0.0002
+  epochs: 3
+  batch_size: 2
+  grad_accum: 4
+
+eval:
+  target_ratio: 0.90
+  min_json_valid: 0.90
+  primary_field: categorie
+  label_fields: [categorie, urgence]
+  max_iterations: 2
+  baseline: true
+  # Le test set complet prend du temps sur un petit GPU : on en garde 80.
+  max_test_examples: 80
+
+export:
+  quantizations: [Q4_K_M]
+  ollama_model_name: distill-email-triage-local

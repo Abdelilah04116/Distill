@@ -162,6 +162,24 @@ class CostTracker:
         }
 
 
+def over_budget_hint(estimate: float, ceiling: float, n_examples: int) -> str | None:
+    """Message d'alerte quand l'estimation depasse le plafond, sinon None.
+
+    Le cas est silencieusement destructeur : le run demarre, consomme tout le
+    budget, puis s'arrete en pleine generation. Mieux vaut le dire avant.
+    """
+    if ceiling <= 0 or estimate <= ceiling:
+        return None
+    tenable = max(50, int(n_examples * ceiling / estimate))
+    return (
+        f"l'estimation ({estimate:.2f} $) depasse le plafond ({ceiling:.2f} $) : "
+        "le run s'arretera en pleine generation. "
+        f"Baisse generation.n_examples vers {tenable}, "
+        f"monte budget.max_cost_usd au-dessus de {estimate:.2f} $, "
+        "ou choisis un professeur moins cher."
+    )
+
+
 def estimate_generation_cost(
     n_examples: int,
     examples_per_call: int,

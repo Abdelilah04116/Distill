@@ -91,7 +91,8 @@ Ce qui m'a le plus occupé n'a pas été l'entraînement. C'est tout ce qui l'en
 Le code est ouvert, sous Apache 2.0, et il tourne en une commande :
 
 ```bash
-pip install distill-slm
+git clone https://github.com/Abdelilah04116/distill && cd distill
+pip install -e .
 distill run --task examples/email-triage/task.yaml
 ollama run distill-email-triage
 ```
